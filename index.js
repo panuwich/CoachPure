@@ -160,7 +160,7 @@ const pushBMI = (ID, bmi) => {
     });
 }
 
-const pushCal = (ID,menu, cal) => {
+const pushCal = (ID, menu, cal) => {
     return request({
         method: 'POST',
         uri: LINE_MESSAGING_API + '/push',
@@ -181,6 +181,26 @@ const pushCal = (ID,menu, cal) => {
     });
 }
 
+const pushBMIError = (ID) =>{
+    return request({
+        method: 'POST',
+        uri: LINE_MESSAGING_API + '/push',
+        headers: LINE_HEADER,
+        body: JSON.stringify({
+            to: ID,
+            messages: [
+                {
+                    type: "text",
+                    text: "กรุณาบันทึกข้อมูลผู้ใช้\nก่อนคำนวณ BMI ด้วยครับ"
+                }
+            ]
+        })
+    }).then(() => {
+        return res.status(200);//res.status(200).send(Done);
+    }).catch((error) => {
+        return;
+    });
+}
 
 const server = express();
 server.use(bodyParser.urlencoded({
@@ -271,18 +291,28 @@ server.post('/', function (request, response) {
     function calBMI(agent) {
         var height = 1;
         var weight = 1;
+        const userId = agent.originalRequest.payload.data.source.userId;
+        var itemRefu = ref.child("user");
+        itemRefu.once("value").then(function (snapshot) {
+            var hasUser = snapshot.hasChild(userId);
+            if (hasUser == false) {
+                pushBMIError(userId);
+
+            } else {
+                var itemRef = ref.child("user").child(agent.originalRequest.payload.data.source.userId);
+                itemRef.orderByChild("userId").equalTo(agent.originalRequest.payload.data.source.userId)
+                    .on("child_added", function (snapshot) {
+                        height = snapshot.val().userHeight;
+                        weight = snapshot.val().userWeight;
+                        height = height / 100;
+                        console.log(height + " " + weight);
+                        var bmi = weight / (height * height);
+                        pushBMI(agent.originalRequest.payload.data.source.userId, bmi);
+                    });
+            }
+        });
 
 
-        var itemRef = ref.child("user").child(agent.originalRequest.payload.data.source.userId);
-        itemRef.orderByChild("userId").equalTo(agent.originalRequest.payload.data.source.userId)
-            .on("child_added", function (snapshot) {
-                height = snapshot.val().userHeight;
-                weight = snapshot.val().userWeight;
-                height = height / 100;
-                console.log(height + " " + weight);
-                var bmi = weight / (height * height);
-                pushBMI(agent.originalRequest.payload.data.source.userId, bmi);
-            });
 
     }
 
@@ -295,31 +325,35 @@ server.post('/', function (request, response) {
         const height = agent.parameters.height;
         const weight = agent.parameters.weight;
         var ans = "";
-        if(DOB == "" || gender == "" || height == "" || weight == ""){
-            ans = "กรุณากดบันทึกข้อมูลผู้ใช้อีกครั้ง";
-        }else{
-            var BMR = 0;
-        if (gender == "M") {
-            BMR = 66 + (13.7 * weight) + (5 * height) - (6.8 * age);
+        if (DOB == "" || gender == "" || height == "" || weight == "") {
+            ans = "กรุณาบันทึกข้อมูลอีกครั้ง";
+        }else if(age > 100 || age <= 0 || (gender != "M" && gender != "F")
+        || height >= 250 || height < 50 || weight > 200 || weight <= 1){
+            ans = "กรุณากรอกข้อมูลให้ถูกต้องด้วยครับ";
+
         } else {
-            BMR = 665 + (9.6 * weight) + (1.8 * height) - (4.7 * age);
-        }
-        const TDEE = BMR * 1.2;
-        ref.child("user").child(userId).remove();
-        var itemRef = ref.child("user").child(userId);
+            var BMR = 0;
+            if (gender == "M") {
+                BMR = 66 + (13.7 * weight) + (5 * height) - (6.8 * age);
+            } else {
+                BMR = 665 + (9.6 * weight) + (1.8 * height) - (4.7 * age);
+            }
+            const TDEE = BMR * 1.2;
+            ref.child("user").child(userId).remove();
+            var itemRef = ref.child("user").child(userId);
 
-        var newItemRef = itemRef.push();
+            var newItemRef = itemRef.push();
 
-        newItemRef.update({
-            "userId": userId,
-            "userDOB": DOB,
-            "userGender": gender,
-            "userHeight": height,
-            "userWeight": weight,
-            "userTDEE": TDEE,
-            "userCal": 0
-        });
-        ans = "บันทึกข้อมูลเรียบร้อยครับผม";
+            newItemRef.update({
+                "userId": userId,
+                "userDOB": DOB,
+                "userGender": gender,
+                "userHeight": height,
+                "userWeight": weight,
+                "userTDEE": TDEE,
+                "userCal": 0
+            });
+            ans = "บันทึกข้อมูลเรียบร้อยครับผม";
         }
         agent.add(ans);
 
@@ -344,7 +378,7 @@ server.post('/', function (request, response) {
         var itemRef = ref.child("food");
         itemRef.orderByChild("foodName").equalTo(menu)
             .on("child_added", function (snapshot) {
-                cal = snapshot.val().calories ;
+                cal = snapshot.val().calories;
                 cal *= num;
                 console.log(num);
                 console.log(cal);
@@ -369,7 +403,7 @@ server.post('/', function (request, response) {
         var itemRef = ref.child("sport");
         itemRef.orderByChild("sportName").equalTo(sport)
             .on("child_added", function (snapshot) {
-                cal = snapshot.val().calories ;
+                cal = snapshot.val().calories;
                 cal *= num;
                 console.log(num);
                 console.log(cal);
@@ -386,14 +420,14 @@ server.post('/', function (request, response) {
 
 
     }
-    function askCalories(agent){
+    function askCalories(agent) {
         const menu = agent.parameters.menu;
         var itemRef = ref.child("food");
         itemRef.orderByChild("foodName").equalTo(menu)
             .on("child_added", function (snapshot) {
                 const m = snapshot.val().calories;
-                pushCal(agent.originalRequest.payload.data.source.userId,menu,m);
-                
+                pushCal(agent.originalRequest.payload.data.source.userId, menu, m);
+
             });
 
     }
