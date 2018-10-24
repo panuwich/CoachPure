@@ -181,7 +181,7 @@ const pushCal = (ID, menu, cal) => {
     });
 }
 
-const pushBMIError = (ID) =>{
+const pushError = (ID,msg) =>{
     return request({
         method: 'POST',
         uri: LINE_MESSAGING_API + '/push',
@@ -191,7 +191,7 @@ const pushBMIError = (ID) =>{
             messages: [
                 {
                     type: "text",
-                    text: "กรุณาบันทึกข้อมูลผู้ใช้\nก่อนคำนวณ BMI ด้วยครับ"
+                    text: msg
                 }
             ]
         })
@@ -296,7 +296,7 @@ server.post('/', function (request, response) {
         itemRefu.once("value").then(function (snapshot) {
             var hasUser = snapshot.hasChild(userId);
             if (hasUser == false) {
-                pushBMIError(userId);
+                pushBMIError(userId,"กรุณาบันทึกข้อมูลผู้ใช้\nก่อนคำนวณ BMI ด้วยครับ");
 
             } else {
                 var itemRef = ref.child("user").child(agent.originalRequest.payload.data.source.userId);
@@ -366,7 +366,7 @@ server.post('/', function (request, response) {
             .on("child_added", function (snapshot) {
                 const calRemain = (snapshot.val().userTDEE - snapshot.val().userCal).toFixed(2);
                 //console.log(calRemain);
-                agent.add("แคลอรี่คงเหลือสำหรับวันนี้ คือ " + calRemain);
+                agent.add("วันนี้คุณรับประทานได้อีก " + calRemain + " แคลอรี่");
 
             });
     }
@@ -405,8 +405,6 @@ server.post('/', function (request, response) {
             .on("child_added", function (snapshot) {
                 cal = snapshot.val().calories;
                 cal *= num;
-                console.log(num);
-                console.log(cal);
 
                 var itemRef2 = ref.child("user").child(agent.originalRequest.payload.data.source.userId);;
                 itemRef2.orderByChild("userId").equalTo(agent.originalRequest.payload.data.source.userId)
@@ -422,13 +420,24 @@ server.post('/', function (request, response) {
     }
     function askCalories(agent) {
         const menu = agent.parameters.menu;
+        const userId = agent.originalRequest.payload.data.source.userId;
         var itemRef = ref.child("food");
-        itemRef.orderByChild("foodName").equalTo(menu)
+        itemRef.once("value").then(function (snapshot) {
+            var hasUser = snapshot.hasChild(menu);
+            if (hasUser == false) {
+                pushError(userId,"ขออภัยยังไม่มีเมนูนี้ในฐานข้อมูล");
+
+            } else {
+               itemRef.orderByChild("foodName").equalTo(menu)
             .on("child_added", function (snapshot) {
                 const m = snapshot.val().calories;
                 pushCal(agent.originalRequest.payload.data.source.userId, menu, m);
 
             });
+            }
+        });
+
+        
 
     }
     let intentMap = new Map();
