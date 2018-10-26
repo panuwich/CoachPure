@@ -296,7 +296,7 @@ server.post('/', function (request, response) {
         itemRefu.once("value").then(function (snapshot) {
             var hasUser = snapshot.hasChild(userId);
             if (hasUser == false) {
-                pushBMIError(userId,"กรุณาบันทึกข้อมูลผู้ใช้\nก่อนคำนวณ BMI ด้วยครับ");
+                pushError(userId,"กรุณาบันทึกข้อมูลผู้ใช้\nก่อนคำนวณ BMI ด้วยครับ");
 
             } else {
                 var itemRef = ref.child("user").child(agent.originalRequest.payload.data.source.userId);
