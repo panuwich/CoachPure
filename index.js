@@ -293,7 +293,7 @@ server.post('/', function (request, response) {
         var weight = 1;
         const userId = agent.originalRequest.payload.data.source.userId;
         var itemRefu = ref.child("user");
-        itemRefu.once("child_added").then(function (snapshot) {
+        itemRefu.once("value").then(function (snapshot) {
             var hasUser = snapshot.hasChild(userId);
             if (hasUser == false) {
                 pushBMIError(userId,"กรุณาบันทึกข้อมูลผู้ใช้\nก่อนคำนวณ BMI ด้วยครับ");
