@@ -375,7 +375,7 @@ server.post('/', function (request, response) {
         const menu = agent.parameters.menu;
         const num = agent.parameters.num;
         var cal = 0;
-        if(checkUser){
+        if(checkUser()){
         var itemRef = ref.child("food");
         itemRef.once("value").then(function (snapshot) {
             var hasUser = snapshot.hasChild(menu);
@@ -418,7 +418,7 @@ server.post('/', function (request, response) {
         const num = agent.parameters.num;
         var cal = 0;
         const userId = agent.originalRequest.payload.data.source.userId;
-        if(checkUser){
+        if(checkUser()){
         var itemRef = ref.child("sport");
         itemRef.once("value").then(function (snapshot) {
             var hasUser = snapshot.hasChild(sport);
