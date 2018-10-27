@@ -375,36 +375,43 @@ server.post('/', function (request, response) {
         const menu = agent.parameters.menu;
         const num = agent.parameters.num;
         var cal = 0;
-        if(checkUser()){
-        var itemRef = ref.child("food");
-        itemRef.once("value").then(function (snapshot) {
-            var hasUser = snapshot.hasChild(menu);
-            if (hasUser == false) {
-                pushError(userId, "ขออภัยยังไม่มีเมนูนี้ในฐานข้อมูลครับ");
-                pushError(userId, "หากไม่มีรายการเพิ่มเติม กรุณาพิมคำว่า \"เสร็จสิ้น\" ด้วยครับ");
-            } else {
-                pushError(userId, "บันทึกข้อมูลเรียบร้อยครับ");
-                pushError(userId, "หากไม่มีรายการเพิ่มเติม กรุณาพิมคำว่า \"เสร็จสิ้น\" ด้วยครับ");
-                itemRef.orderByChild("foodName").equalTo(menu)
-                    .on("child_added", function (snapshot) {
-                        cal = snapshot.val().calories;
-                        cal *= num;
-                        console.log(num);
-                        console.log(cal);
-
-                        var itemRef2 = ref.child("user").child(agent.originalRequest.payload.data.source.userId);;
-                        itemRef2.orderByChild("userId").equalTo(agent.originalRequest.payload.data.source.userId)
+        //console.log(checkUser());
+        var itemRefu = ref.child("user");
+        itemRefu.once("value").then(function (snapshot) {
+            var hasUser = snapshot.hasChild(userId);       
+            if(hasUser == true){
+                var itemRef = ref.child("food");
+                itemRef.once("value").then(function (snapshot) {
+                    var hasMenu = snapshot.hasChild(menu);
+                    if (hasMenu == false) {
+                        pushError(userId, "ขออภัยยังไม่มี"+ menu +"ในฐานข้อมูลครับ");
+                        pushError(userId, "หากไม่มีรายการเพิ่มเติม กรุณาพิมคำว่า \"เสร็จสิ้น\" ด้วยครับ");
+                    } else {
+                        pushError(userId, "บันทึกข้อมูลเรียบร้อยครับ");
+                        pushError(userId, "หากไม่มีรายการเพิ่มเติม กรุณาพิมคำว่า \"เสร็จสิ้น\" ด้วยครับ");
+                        itemRef.orderByChild("foodName").equalTo(menu)
                             .on("child_added", function (snapshot) {
-                                cal = snapshot.val().userCal + cal;
-                                snapshot.ref.update({ userCal: cal })
-
+                                cal = snapshot.val().calories;
+                                cal *= num;
+                                console.log(num);
+                                console.log(cal);
+        
+                                var itemRef2 = ref.child("user").child(agent.originalRequest.payload.data.source.userId);;
+                                itemRef2.orderByChild("userId").equalTo(agent.originalRequest.payload.data.source.userId)
+                                    .on("child_added", function (snapshot) {
+                                        cal = snapshot.val().userCal + cal;
+                                        snapshot.ref.update({ userCal: cal })
+        
+                                    });
                             });
-                    });
-            }
+                    }
+                });
+                }else{
+                    pushError(userId,"กรุณาบันทึกข้อมูลผู้ใช้ก่อนครับ");
+                    pushError(userId,"กรุณาพิมคำว่า \"เสร็จสิ้น\" ก่อนกดบันทึกข้อมูลด้วยครับ");
+                }
         });
-        }else{
-            agent.add("กรุณาบันทึกข้อมูลผู้ใช้ก่อนครับ");
-        }
+
 
 
 
@@ -418,49 +425,48 @@ server.post('/', function (request, response) {
         const num = agent.parameters.num;
         var cal = 0;
         const userId = agent.originalRequest.payload.data.source.userId;
-        if(checkUser()){
-        var itemRef = ref.child("sport");
-        itemRef.once("value").then(function (snapshot) {
-            var hasUser = snapshot.hasChild(sport);
-            if (hasUser == false) {
-                pushError(userId, "ขออภัยยังไม่มี" + sport +"ในฐานข้อมูลครับ");
-                pushError(userId, "หากไม่มีรายการเพิ่มเติม กรุณาพิมคำว่า \"เสร็จสิ้น\" ด้วยครับ");
-            } else {
-                pushError(userId, "บันทึกข้อมูลเรียบร้อยครับ");
-                pushError(userId, "หากไม่มีรายการเพิ่มเติม กรุณาพิมคำว่า \"เสร็จสิ้น\" ด้วยครับ");
-                var itemRef = ref.child("sport");
-                itemRef.orderByChild("sportName").equalTo(sport)
-                    .on("child_added", function (snapshot) {
-                        cal = snapshot.val().calories;
-                        cal *= num;
-
-                        var itemRef2 = ref.child("user").child(agent.originalRequest.payload.data.source.userId);;
-                        itemRef2.orderByChild("userId").equalTo(agent.originalRequest.payload.data.source.userId)
-                            .on("child_added", function (snapshot) {
-                                cal = snapshot.val().userCal - cal;
-                                snapshot.ref.update({ userCal: cal })
-
-                            });
-                    });
-            }
-
-        });
-        }else{
-            agent.add("กรุณาบันทึกข้อมูลผู้ใช้ก่อนครับ");
-        }
-
-
-
-
-    }
-    function checkUser(){
-        const userId = agent.originalRequest.payload.data.source.userId;
         var itemRefu = ref.child("user");
         itemRefu.once("value").then(function (snapshot) {
-            var hasUser = snapshot.hasChild(userId);
-            return hasUser;
+            var hasUser = snapshot.hasChild(userId);      
+            if(hasUser==true){
+                var itemRef = ref.child("sport");
+                itemRef.once("value").then(function (snapshot) {
+                    var hasSport = snapshot.hasChild(sport);
+                    if (hasSport == false) {
+                        pushError(userId, "ขออภัยยังไม่มี" + sport +"ในฐานข้อมูลครับ");
+                        pushError(userId, "หากไม่มีรายการเพิ่มเติม กรุณาพิมคำว่า \"เสร็จสิ้น\" ด้วยครับ");
+                    } else {
+                        pushError(userId, "บันทึกข้อมูลเรียบร้อยครับ");
+                        pushError(userId, "หากไม่มีรายการเพิ่มเติม กรุณาพิมคำว่า \"เสร็จสิ้น\" ด้วยครับ");
+                        var itemRef = ref.child("sport");
+                        itemRef.orderByChild("sportName").equalTo(sport)
+                            .on("child_added", function (snapshot) {
+                                cal = snapshot.val().calories;
+                                cal *= num;
+        
+                                var itemRef2 = ref.child("user").child(agent.originalRequest.payload.data.source.userId);;
+                                itemRef2.orderByChild("userId").equalTo(agent.originalRequest.payload.data.source.userId)
+                                    .on("child_added", function (snapshot) {
+                                        cal = snapshot.val().userCal - cal;
+                                        snapshot.ref.update({ userCal: cal })
+        
+                                    });
+                            });
+                    }
+        
+                });
+                }else{
+                    pushError(userId,"กรุณาบันทึกข้อมูลผู้ใช้ก่อนครับ");
+                    pushError(userId,"กรุณาพิมคำว่า \"เสร็จสิ้น\" ก่อนกดบันทึกข้อมูลด้วยครับ");
+                }      
         });
+        
+
+
+
+
     }
+
     function askCalories(agent) {
         const menu = agent.parameters.menu;
         const userId = agent.originalRequest.payload.data.source.userId;
