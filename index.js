@@ -375,11 +375,10 @@ server.post('/', function (request, response) {
         const menu = agent.parameters.menu;
         const num = agent.parameters.num;
         var cal = 0;
-        var hasUser = false;
+        if(checkUser){
         var itemRef = ref.child("food");
-
         itemRef.once("value").then(function (snapshot) {
-            hasUser = snapshot.hasChild(menu);
+            var hasUser = snapshot.hasChild(menu);
             if (hasUser == false) {
                 pushError(userId, "ขออภัยยังไม่มีเมนูนี้ในฐานข้อมูลครับ");
                 pushError(userId, "หากไม่มีรายการเพิ่มเติม กรุณาพิมคำว่า \"เสร็จสิ้น\" ด้วยครับ");
@@ -403,6 +402,10 @@ server.post('/', function (request, response) {
                     });
             }
         });
+        }else{
+            agent.add("กรุณาบันทึกข้อมูลผู้ใช้ก่อนครับ");
+        }
+
 
 
 
@@ -415,7 +418,7 @@ server.post('/', function (request, response) {
         const num = agent.parameters.num;
         var cal = 0;
         const userId = agent.originalRequest.payload.data.source.userId;
-
+        if(checkUser){
         var itemRef = ref.child("sport");
         itemRef.once("value").then(function (snapshot) {
             var hasUser = snapshot.hasChild(sport);
@@ -442,9 +445,21 @@ server.post('/', function (request, response) {
             }
 
         });
+        }else{
+            agent.add("กรุณาบันทึกข้อมูลผู้ใช้ก่อนครับ");
+        }
 
 
 
+
+    }
+    function checkUser(){
+        const userId = agent.originalRequest.payload.data.source.userId;
+        var itemRefu = ref.child("user");
+        itemRefu.once("value").then(function (snapshot) {
+            var hasUser = snapshot.hasChild(userId);
+            return hasUser;
+        });
     }
     function askCalories(agent) {
         const menu = agent.parameters.menu;
